@@ -14,12 +14,17 @@ public class TemplateService {
     @Autowired
     RecipientService recipientService;
 
+    @Autowired
+    VariableService variableService;
+
     public boolean uploadTemplate(UploadRequestDTO requestDTO) {
         Template template = new Template();
         template.setTemplateId(requestDTO.getTemplateId());
         template.setTemplate(requestDTO.getTemplate());
         template.setRecipients(recipientService.transferFromStringListToRecipientList(requestDTO.getRecipients()));
-        templateRepository.save(template);
+        Template t = templateRepository.save(template);
+        if (requestDTO.getVariables() != null)
+            variableService.saveVariables(requestDTO, t);
         return true;
     }
 }

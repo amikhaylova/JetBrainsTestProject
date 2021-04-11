@@ -39,6 +39,15 @@ public class ControllerExceptionHandler {
                 "Request's parameters are invalid or missing.");
     }
 
+    @ExceptionHandler(NumberFormatException.class)
+    @ResponseStatus(value = HttpStatus.BAD_REQUEST)
+    public ErrorMessage numberFormatException(NumberFormatException ex, WebRequest request) {
+        return new ErrorMessage(
+                HttpStatus.BAD_REQUEST.value(),
+                new Date(),
+                "Variable value is not valid: " + ex.getMessage());
+    }
+
 
     @ExceptionHandler(Exception.class)
     @ResponseStatus(value = HttpStatus.BAD_REQUEST)
@@ -48,4 +57,7 @@ public class ControllerExceptionHandler {
                 new Date(),
                 ex.getMessage());
     }
+
+
+
 }

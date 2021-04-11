@@ -5,9 +5,12 @@ import jet.brains.test.analytics.dto.SendMessageRequestDTO;
 import jet.brains.test.analytics.entity.Recipient;
 import jet.brains.test.analytics.entity.RepeatedMessage;
 import jet.brains.test.analytics.entity.Template;
+import jet.brains.test.analytics.entity.Variable;
 import jet.brains.test.analytics.exception.NoSuchTemplateException;
 import jet.brains.test.analytics.repository.RepeatedMessageRepository;
 import jet.brains.test.analytics.repository.TemplateRepository;
+import jet.brains.test.analytics.repository.VariableRepository;
+import org.aspectj.weaver.ast.Var;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.http.HttpEntity;
@@ -32,6 +35,12 @@ public class MessageService {
     @Autowired
     RepeatedMessageRepository messageRepository;
 
+    @Autowired
+    VariableRepository variableRepository;
+
+    @Autowired
+    VariableService variableService;
+
     private final RestTemplate restTemplate;
 
     public MessageService(RestTemplateBuilder restTemplateBuilder) {
@@ -43,20 +52,29 @@ public class MessageService {
     public boolean sendMessage(SendMessageRequestDTO requestDTO) throws NoSuchTemplateException {
         String templateId = requestDTO.getTemplateId();
         Template template = templateRepository.getTemplatesByTemplateId(templateId);
-        if (template == null) {
+
+        //check if templateId exists in BD
+        if (template == null)
             throw new NoSuchTemplateException(templateId);
-        }
+
+
+        List<Variable> variablesToTypes = variableRepository.findByTemplate(template);
+
+        //if DB has some information about variables data types
+        if (variablesToTypes != null)
+            variableService.validateVariables(variablesToTypes, requestDTO.getVariables());
+
         List<Recipient> recipients = template.getRecipients();
         String message = formMessage(template.getTemplate(), requestDTO.getVariables());
-        if (requestDTO.getRepeat()) {
-            RepeatedMessage repeatedMessage = new RepeatedMessage();
-            repeatedMessage.setText(message);
-            repeatedMessage.setTemplate(template);
-            messageRepository.save(repeatedMessage);
-        }
+
+        //if message should be saved for future repetitions
+        if (requestDTO.getRepeat())
+            saveRepeatedMessage(template, message);
+
         for (Recipient recipient : recipients) {
             sendMessage(recipient.getAddress(), message);
         }
+
         return true;
     }
 
@@ -75,8 +93,14 @@ public class MessageService {
         HttpEntity<MessageDTO> request = new HttpEntity<>(messageDTO);
         ResponseEntity<String> response = restTemplate
                 .exchange(address, HttpMethod.POST, request, String.class);
-        System.out.println(response);
         return response;
+    }
+
+    private RepeatedMessage saveRepeatedMessage(Template template, String message) {
+        RepeatedMessage repeatedMessage = new RepeatedMessage();
+        repeatedMessage.setText(message);
+        repeatedMessage.setTemplate(template);
+        return messageRepository.save(repeatedMessage);
     }
 
 

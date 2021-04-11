@@ -19,4 +19,10 @@ CREATE TABLE IF NOT EXISTS repeated_message
     text     VARCHAR,
     template_id VARCHAR REFERENCES templates
 );
-
+CREATE TABLE IF NOT EXISTS variables
+(
+    id          IDENTITY PRIMARY KEY,
+    type     VARCHAR,
+    name     VARCHAR,
+    template_id VARCHAR REFERENCES templates
+);
