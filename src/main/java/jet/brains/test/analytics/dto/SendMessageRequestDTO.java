@@ -18,4 +18,6 @@ public class SendMessageRequestDTO implements Serializable {
     @NotNull
     @NotEmpty
     private List<Map<String, String>> variables;
+    //field for additional task with repeated messages
+    private Boolean repeat;
 }
